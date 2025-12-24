@@ -18,7 +18,7 @@
         }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="text-gray-800 flex flex-col min-h-screen">
 
     <nav class="bg-white shadow fixed w-full z-50 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,13 +26,29 @@
                 <div class="flex-shrink-0 flex items-center">
                     <span class="font-bold text-2xl text-orange-600">QuickBites</span>
                 </div>
+
                 <div class="hidden md:flex space-x-8">
-                    <a href="#" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Home</a>
-                    <a href="/menu" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Menu</a>
+                    <a href="/" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Home</a>
+                    <a href="#" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Menu</a>
                     <a href="#" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">About</a>
                 </div>
-                <div>
-                    <a href="/login" class="text-orange-600 border border-orange-600 px-4 py-2 rounded-full hover:bg-orange-600 hover:text-white transition">Login</a>
+
+                <div class="hidden md:flex items-center space-x-4">
+                    @auth
+                        <span class="text-gray-700 font-medium">Hi, {{ auth()->user()->name }}</span>
+                        
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition text-sm font-bold">
+                                Logout
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="text-gray-700 hover:text-orange-600 font-medium">Login</a>
+                        <a href="{{ route('register') }}" class="bg-orange-600 text-white px-4 py-2 rounded-full hover:bg-orange-700 transition font-bold shadow-md">
+                            Sign Up
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -47,7 +63,7 @@
             <p class="text-xl sm:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto">
                 Order from the best local restaurants and get it delivered to your doorstep in minutes.
             </p>
-            <a href="/menu" class="bg-orange-600 text-white text-lg font-bold px-8 py-4 rounded-full shadow-lg hover:bg-orange-700 transition transform hover:scale-105">
+            <a href="#" class="bg-orange-600 text-white text-lg font-bold px-8 py-4 rounded-full shadow-lg hover:bg-orange-700 transition transform hover:scale-105">
                 Order Now →
             </a>
         </div>
@@ -58,19 +74,19 @@
             <h2 class="text-3xl font-bold text-gray-900 mb-12">How It Works</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-2 transition duration-300">
                     <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-600 text-2xl font-bold">1</div>
                     <h3 class="text-xl font-bold mb-2">Choose Your Meal</h3>
                     <p class="text-gray-600">Browse our extensive menu and pick your favorite dishes.</p>
                 </div>
 
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-2 transition duration-300">
                     <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-600 text-2xl font-bold">2</div>
                     <h3 class="text-xl font-bold mb-2">Easy Payment</h3>
                     <p class="text-gray-600">Pay online or choose cash on delivery securely.</p>
                 </div>
 
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-2 transition duration-300">
                     <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-orange-600 text-2xl font-bold">3</div>
                     <h3 class="text-xl font-bold mb-2">Fast Delivery</h3>
                     <p class="text-gray-600">Get your food delivered hot and fresh in no time.</p>
@@ -80,7 +96,7 @@
         </div>
     </div>
 
-    <footer class="bg-gray-800 text-white py-8">
+    <footer class="bg-gray-800 text-white py-8 mt-auto">
         <div class="max-w-7xl mx-auto px-4 text-center">
             <p>&copy; 2024 QuickBites. All rights reserved.</p>
         </div>
