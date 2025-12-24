@@ -1,11 +1,16 @@
-// routes/web.php
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// This is where you will eventually use the database
-Route::get('/menu', function () {
-    return "This is where the food list (Database) will go later!";
-});
+// Registration Routes
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+
+// Login Routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+
+// Logout Route
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
