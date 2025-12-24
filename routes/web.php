@@ -1,25 +1,94 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\Request;
+use App\Models\MenuItem;
+use App\Models\Order;
+use App\Models\Customer;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-*/
-
+// 1. HOME PAGE
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Registration Routes
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+// 2. CHECK-IN (Save Customer & Session)
+Route::post('/checkin', function (Request $request) {
+    $customer = Customer::create([
+        'name' => $request->name,
+        'phone' => $request->phone,
+        'table_number' => $request->table_number
+    ]);
+    
+    // Save ID to session so we remember them
+    session(['customer_id' => $customer->id]);
+    
+    return redirect('/menu');
+});
 
-// Login Routes
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+// 3. MENU PAGE
+Route::get('/menu', function () {
+    if (!Schema::hasTable('menu_items')) return "Run php artisan migrate";
+    $menuItems = MenuItem::all();
+    return view('menu', ['menuItems' => $menuItems]);
+});
 
-// Logout Route
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// 4. ORDER ITEM (Ajax Click)
+Route::post('/order', function (Request $request) {
+    // Get the current customer ID from the session
+    $customerId = session('customer_id');
+
+    if (!$customerId) {
+        return response()->json(['message' => 'Session expired. Please check in again.'], 401);
+    }
+
+    Order::create([
+        'item_name' => $request->item_name,
+        'price' => $request->price,
+        'customer_id' => $customerId // <--- LINKING ORDER TO CUSTOMER
+    ]);
+
+    return response()->json(['message' => 'Added to bill']);
+});
+
+// 5. PAYMENT PAGE (New!)
+Route::get('/payment', function () {
+    $customerId = session('customer_id');
+    
+    if (!$customerId) return redirect('/'); // Redirect home if no session
+
+    // Get Customer Details
+    $customer = Customer::find($customerId);
+    
+    // Get Their Orders
+    $orders = Order::where('customer_id', $customerId)->get();
+    
+    // Calculate Total
+    $total = $orders->sum('price');
+
+    return view('payment', [
+        'customer' => $customer,
+        'orders' => $orders,
+        'total' => $total
+    ]);
+});
+
+// 6. SEEDER (Run http://127.0.0.1:8000/seed once to fill menu)
+Route::get('/seed', function() {
+    MenuItem::truncate(); // Clear old items so we don't get duplicates
+    
+    $items = [
+        ['name' => 'Classic Burger', 'category' => 'food', 'price' => 10.50, 'description' => 'Beef patty with cheese'],
+        ['name' => 'Spicy Chicken', 'category' => 'food', 'price' => 12.00, 'description' => 'Fried chicken with hot sauce'],
+        ['name' => 'Margherita Pizza', 'category' => 'food', 'price' => 14.00, 'description' => 'Tomato, mozzarella, basil'],
+        ['name' => 'Carbonara Pasta', 'category' => 'food', 'price' => 13.50, 'description' => 'Creamy sauce with bacon'],
+        ['name' => 'Caesar Salad', 'category' => 'food', 'price' => 9.00, 'description' => 'Fresh romaine lettuce'],
+        ['name' => 'Cola', 'category' => 'beverage', 'price' => 3.00, 'description' => 'Ice cold soda'],
+        ['name' => 'Iced Coffee', 'category' => 'beverage', 'price' => 4.50, 'description' => 'Brewed coffee with milk'],
+        ['name' => 'Lemonade', 'category' => 'beverage', 'price' => 3.50, 'description' => 'Freshly squeezed'],
+        ['name' => 'Green Tea', 'category' => 'beverage', 'price' => 2.50, 'description' => 'Hot and soothing'],
+    ];
+
+    foreach($items as $item) { MenuItem::create($item); }
+    return "Menu Updated! <a href='/menu'>Go to Menu</a>";
+});
