@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickBites - Check In</title>
+    <title>QuickBites - Welcome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -22,13 +22,24 @@
 </head>
 <body class="text-gray-800 flex flex-col min-h-screen">
 
-    <nav class="bg-white shadow fixed w-full z-50 top-0">
+    @if(session('success'))
+        <div onclick="this.remove()" class="fixed top-0 w-full bg-green-500 text-white text-center py-4 z-50 cursor-pointer font-bold shadow-lg">
+            {{ session('success') }} (Click to close)
+        </div>
+    @endif
+
+    <nav class="bg-white shadow fixed w-full z-40 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <span class="font-bold text-2xl text-orange-600">QuickBites</span>
-                <div class="hidden md:flex space-x-8">
-                    <a href="/" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Home</a>
-                    <a href="/menu" class="text-gray-700 hover:text-orange-600 px-3 py-2 font-medium">Menu</a>
+                
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="/" class="text-gray-700 hover:text-orange-600 font-medium">Home</a>
+                    <a href="/menu" class="text-gray-700 hover:text-orange-600 font-medium">Menu (View Only)</a>
+                    
+                    <a href="/admin/login" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-gray-700 transition">
+                        🔒 Admin Login
+                    </a>
                 </div>
             </div>
         </div>
@@ -39,7 +50,7 @@
         <div class="relative z-10 text-center px-4">
             <h1 class="text-4xl sm:text-6xl font-extrabold text-white mb-6 drop-shadow-lg">
                 Welcome to QuickBites
-                <span class="block text-orange-500 text-3xl sm:text-4xl mt-2">Please Check In to Order</span>
+                <span class="block text-orange-500 text-3xl sm:text-4xl mt-2">Delicious Food, Served Fast</span>
             </h1>
             
             <button onclick="toggleModal()" class="bg-orange-600 text-white text-xl font-bold px-10 py-4 rounded-full shadow-lg hover:bg-orange-700 transition transform hover:scale-105 cursor-pointer">
@@ -47,7 +58,7 @@
             </button>
 
             <div class="mt-4">
-                <a href="/menu" class="text-gray-300 underline hover:text-white text-sm">Just browsing menu? Click here</a>
+                <a href="/menu" class="text-gray-300 underline hover:text-white text-sm">Just browsing? View Menu</a>
             </div>
         </div>
     </div>
@@ -67,8 +78,7 @@
                 </div>
 
                 <form action="/checkin" method="POST">
-                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
-
+                    @csrf
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
                         <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" name="name" type="text" placeholder="John Doe" required>
@@ -102,7 +112,6 @@
             body.classList.toggle('modal-active');
         }
         
-        // Close modal if clicked outside
         const overlay = document.querySelector('.modal-overlay');
         overlay.addEventListener('click', toggleModal);
     </script>

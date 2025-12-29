@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class MenuItem extends Model
 {
     use HasFactory;
-    // Allow these fields to be filled
-    protected $fillable = ['name', 'category', 'price', 'description'];
+    
+    // Add 'image' to this list
+    protected $fillable = ['name', 'category', 'price', 'description', 'image'];
 }

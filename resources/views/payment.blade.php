@@ -56,10 +56,24 @@
         </div>
 
         <div class="space-y-3">
-            <form action="/pay" method="POST">
+            <form action="/pay" method="POST" class="mt-6">
                 @csrf
-                <button type="submit" class="w-full bg-green-600 text-white font-bold py-4 rounded-lg hover:bg-green-700 transition shadow-lg">
-                    Pay & Finish Dining
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-bold mb-2">Choose Payment Method:</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 flex-1">
+                            <input type="radio" name="payment_method" value="cash" checked class="mr-2 h-5 w-5 text-green-600">
+                            <span class="font-bold">💵 Cash</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 flex-1">
+                            <input type="radio" name="payment_method" value="qr" class="mr-2 h-5 w-5 text-blue-600">
+                            <span class="font-bold">📱 Scan QR</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-4 rounded-lg hover:bg-green-700 transition shadow-lg text-lg">
+                    Confirm Payment & Print Receipt
                 </button>
             </form>
 
