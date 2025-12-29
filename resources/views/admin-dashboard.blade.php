@@ -10,6 +10,8 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">🍔 Menu Management</h1>
             <div class="space-x-2">
+                <a href="/kitchen" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 font-bold">👨‍🍳 Kitchen Tracker</a>
+                
                 <a href="/admin/sales" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">📊 View Sales</a>
                 <a href="/admin/logout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</a>
             </div>

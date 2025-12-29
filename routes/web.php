@@ -3,12 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Customer;
-use App\Models\User;
-use Carbon\Carbon;
+use Carbon\Carbon; // Required for time calculation
 
 // ====================================================
 //                 CUSTOMER ROUTES
@@ -24,7 +22,7 @@ Route::post('/checkin', function (Request $request) {
     
     $customer = Customer::create([
         'name' => $request->name,
-        'phone' => $request->phone, // Ensure phone is passed if your form sends it
+        'phone' => $request->phone, 
         'table_number' => $request->table_number
     ]);
 
@@ -32,7 +30,7 @@ Route::post('/checkin', function (Request $request) {
     return redirect('/menu');
 });
 
-// 2. MENU (Public)
+// 2. MENU (Public - No Tracking Button)
 Route::get('/menu', function () {
     if (!Schema::hasTable('menu_items')) return "Run migrate first";
     
@@ -42,7 +40,7 @@ Route::get('/menu', function () {
     ]);
 });
 
-// 3. ORDERING (Ajax)
+// 3. ORDERING
 Route::post('/order', function (Request $request) {
     if (!session('customer_id')) return response()->json(['message' => 'Session expired'], 401);
     
@@ -56,10 +54,9 @@ Route::post('/order', function (Request $request) {
     return response()->json(['message' => 'Added']);
 });
 
-// Remove Single Item
+// 4. REMOVE SINGLE ITEM
 Route::delete('/order/{id}', function ($id) {
     $order = Order::find($id);
-    // Security check: ensure order belongs to current session customer
     if ($order && $order->customer_id == session('customer_id')) {
         $order->delete();
         return response()->json(['success' => true]);
@@ -67,18 +64,7 @@ Route::delete('/order/{id}', function ($id) {
     return response()->json(['success' => false], 403);
 });
 
-// Cancel Entire Order
-Route::post('/cancel-all', function () {
-    $cid = session('customer_id');
-    if ($cid) {
-        Order::where('customer_id', $cid)->delete();
-        Customer::destroy($cid);
-        session()->forget(['customer_id', 'table_number']);
-    }
-    return redirect('/')->with('success', 'Order cancelled.');
-});
-
-// 4. PAYMENT PAGE
+// 5. PAYMENT & RECEIPT
 Route::get('/payment', function () {
     if (!session('customer_id')) return redirect('/');
     
@@ -91,7 +77,6 @@ Route::get('/payment', function () {
     ]);
 });
 
-// 5. PROCESS PAYMENT & SHOW RECEIPT (New Logic)
 Route::post('/pay', function (Request $request) {
     $cid = session('customer_id');
     
@@ -99,20 +84,17 @@ Route::post('/pay', function (Request $request) {
 
     // Update Orders with Payment Method and mark as Completed
     Order::where('customer_id', $cid)->update([
-        'status' => 'completed',
-        'payment_method' => $request->payment_method // 'cash' or 'qr'
+        'status' => 'completed', 
+        'payment_method' => $request->payment_method
     ]);
 
-    // Store data for the receipt view
     $customer = Customer::find($cid);
     $orders = Order::where('customer_id', $cid)->get();
     $total = $orders->sum('price');
     $method = $request->payment_method;
 
-    // Clear Session
     session()->forget(['customer_id', 'table_number']);
 
-    // Go to Receipt Page
     return view('receipt', compact('customer', 'orders', 'total', 'method'));
 });
 
@@ -120,14 +102,12 @@ Route::post('/pay', function (Request $request) {
 //                  ADMIN ROUTES
 // ====================================================
 
-// 1. ADMIN LOGIN PAGE
+// 1. ADMIN LOGIN
 Route::get('/admin/login', function () {
     return view('admin-login');
 });
 
-// 2. HANDLE LOGIN
 Route::post('/admin/login', function (Request $request) {
-    // Simple Hardcoded Admin (Username: admin, Pass: admin123)
     if ($request->username === 'admin' && $request->password === 'admin123') {
         session(['is_admin' => true]);
         return redirect('/admin/dashboard');
@@ -135,43 +115,36 @@ Route::post('/admin/login', function (Request $request) {
     return back()->with('error', 'Invalid credentials');
 });
 
-// 3. ADMIN LOGOUT
 Route::get('/admin/logout', function () {
     session()->forget('is_admin');
     return redirect('/admin/login');
 });
 
-// 4. ADMIN DASHBOARD (Menu Management)
+// 2. ADMIN DASHBOARD
 Route::get('/admin/dashboard', function () {
     if (!session('is_admin')) return redirect('/admin/login');
     return view('admin-dashboard', ['menuItems' => MenuItem::all()]);
 });
 
-// 5. ADD MENU ITEM
 Route::post('/admin/menu', function (Request $request) {
     if (!session('is_admin')) return redirect('/admin/login');
-    
     MenuItem::create($request->all());
     return back()->with('success', 'Item Added!');
 });
 
-// 6. DELETE MENU ITEM
 Route::delete('/admin/menu/{id}', function ($id) {
     if (!session('is_admin')) return redirect('/admin/login');
-    
     MenuItem::destroy($id);
     return back()->with('success', 'Item Deleted!');
 });
 
-// 7. SALES REPORT (Weekly)
 Route::get('/admin/sales', function () {
     if (!session('is_admin')) return redirect('/admin/login');
 
-    // Group orders by Week Number
     $sales = Order::where('status', 'completed')
         ->get()
         ->groupBy(function($date) {
-            return Carbon::parse($date->created_at)->format('W'); // Group by Week Number
+            return Carbon::parse($date->created_at)->format('W');
         });
 
     $weeklySales = [];
@@ -187,14 +160,60 @@ Route::get('/admin/sales', function () {
     return view('admin-sales', ['weeklySales' => $weeklySales]);
 });
 
+// 3. AUTOMATED KITCHEN TRACKER (Admin Only)
+Route::get('/kitchen', function () {
+    if (!session('is_admin')) return redirect('/admin/login');
+
+    // --- NEW FAST AUTOMATION LOGIC (Seconds) ---
+    $activeOrders = Order::where('status', '!=', 'completed')->get();
+    
+    foreach($activeOrders as $order) {
+        // Calculate SECONDS since order was created
+        $seconds = $order->created_at->diffInSeconds(now());
+
+        // 10 Seconds -> Move to Cooking
+        if ($seconds >= 10 && $order->status == 'pending') {
+            $order->status = 'cooking';
+            $order->save();
+        }
+        // 20 Seconds -> Move to Ready
+        if ($seconds >= 20 && $order->status == 'cooking') {
+            $order->status = 'ready';
+            $order->save();
+        }
+    }
+
+        // Show ALL orders, even completed ones
+        $orders = Order::orderBy('created_at', 'desc')->get();
+
+    // Prevent Browser Caching so it refreshes correctly
+    return response()
+        ->view('kitchen', ['orders' => $orders])
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+});
+
+// Manual override (Optional, in case Admin wants to click buttons)
+Route::post('/kitchen/update/{id}', function ($id, Request $request) {
+    if (!session('is_admin')) return response()->json(['error' => 'Unauthorized'], 401);
+
+    $order = Order::find($id);
+    if ($order) {
+        $order->status = $request->status;
+        $order->save();
+        return response()->json(['success' => true]);
+    }
+    return response()->json(['success' => false], 404);
+});
+
 // ==========================================
-// 8. SEEDER (20 Items: 10 Food, 10 Drinks)
+// SEEDER (20 Items)
 // ==========================================
 Route::get('/seed', function() {
-    MenuItem::truncate(); // Clear old items
+    MenuItem::truncate(); 
     
     $items = [
-        // --- 10 FOOD ITEMS ---
         ['name' => 'Classic Burger', 'category' => 'food', 'price' => 10.50, 'description' => 'Juicy beef patty with cheddar cheese.', 'image' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80'],
         ['name' => 'Spicy Chicken', 'category' => 'food', 'price' => 12.00, 'description' => 'Crispy fried chicken with hot sauce.', 'image' => 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500&q=80'],
         ['name' => 'Margherita Pizza', 'category' => 'food', 'price' => 14.00, 'description' => 'Wood-fired pizza with basil.', 'image' => 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=500&q=80'],
@@ -204,9 +223,8 @@ Route::get('/seed', function() {
         ['name' => 'Street Tacos', 'category' => 'food', 'price' => 8.50, 'description' => 'Three soft shell beef tacos.', 'image' => 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=500&q=80'],
         ['name' => 'Sushi Platter', 'category' => 'food', 'price' => 18.00, 'description' => 'Assorted fresh sushi rolls.', 'image' => 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80'],
         ['name' => 'Club Sandwich', 'category' => 'food', 'price' => 11.50, 'description' => 'Turkey, bacon, and lettuce.', 'image' => 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=500&q=80'],
-        ['name' => 'Fish and Chips', 'category' => 'food', 'price' => 15.00, 'description' => 'Crispy battered fish with fries.', 'image' => 'https://images.unsplash.com/photo-1579208575657-c595a05383b7?w=500&q=80'],
+        ['name' => 'Fish and Chips', 'category' => 'food', 'price' => 15.00, 'description' => 'Crispy battered fish with fries.', 'image' => 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&q=80'],
 
-        // --- 10 BEVERAGE ITEMS ---
         ['name' => 'Ice Cola', 'category' => 'beverage', 'price' => 3.00, 'description' => 'Ice cold refreshing soda.', 'image' => 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80'],
         ['name' => 'Iced Coffee', 'category' => 'beverage', 'price' => 4.50, 'description' => 'Brewed coffee over ice.', 'image' => 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500&q=80'],
         ['name' => 'Lemonade', 'category' => 'beverage', 'price' => 3.50, 'description' => 'Freshly squeezed lemons.', 'image' => 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80'],
@@ -220,5 +238,11 @@ Route::get('/seed', function() {
     ];
 
     foreach($items as $item) { MenuItem::create($item); }
-    return "Menu Updated with 20 Items! <a href='/menu'>Go to Menu</a>";
+    return "Menu Updated! <a href='/menu'>Go to Menu</a>";
+});
+
+// DEBUG ROUTE - DELETE LATER
+Route::get('/debug-orders', function () {
+    $allOrders = App\Models\Order::all();
+    return $allOrders; // This will show raw JSON data of all orders
 });
