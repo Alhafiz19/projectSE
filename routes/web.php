@@ -29,8 +29,17 @@ Route::post('/checkin', function (Request $request) {
 // 3. MENU PAGE
 Route::get('/menu', function () {
     if (!Schema::hasTable('menu_items')) return "Run php artisan migrate";
+    
     $menuItems = MenuItem::all();
-    return view('menu', ['menuItems' => $menuItems]);
+    
+    // Check if the user has checked in
+    $canOrder = session()->has('customer_id'); 
+
+    // Pass the boolean $canOrder to the view
+    return view('menu', [
+        'menuItems' => $menuItems, 
+        'canOrder' => $canOrder
+    ]);
 });
 
 // 4. ORDER ITEM (Ajax Click)
@@ -91,4 +100,35 @@ Route::get('/seed', function() {
 
     foreach($items as $item) { MenuItem::create($item); }
     return "Menu Updated! <a href='/menu'>Go to Menu</a>";
+});
+
+// 8. REMOVE SINGLE ITEM
+Route::delete('/order/{id}', function ($id) {
+    $order = Order::find($id);
+    
+    // Security: Only allow deleting if it belongs to the current customer
+    if ($order && $order->customer_id == session('customer_id')) {
+        $order->delete();
+        return response()->json(['success' => true]);
+    }
+    
+    return response()->json(['success' => false], 403);
+});
+
+// 9. CANCEL ENTIRE ORDER (Restart)
+Route::post('/cancel-all', function () {
+    $customerId = session('customer_id');
+    
+    if ($customerId) {
+        // Delete all orders for this customer
+        Order::where('customer_id', $customerId)->delete();
+        
+        // Remove the customer from the database (optional, keeps data clean)
+        Customer::destroy($customerId);
+        
+        // Clear the session
+        session()->forget(['customer_id', 'table_number']);
+    }
+
+    return redirect('/')->with('success', 'Order cancelled. Hope to see you again!');
 });
