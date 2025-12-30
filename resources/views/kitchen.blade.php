@@ -23,7 +23,8 @@
             <div class="bg-gray-800 rounded-xl p-5 border-l-8 shadow-lg relative
                 {{ $order->status == 'pending' ? 'border-red-500' : '' }}
                 {{ $order->status == 'cooking' ? 'border-yellow-500' : '' }}
-                {{ $order->status == 'ready' ? 'border-green-500' : '' }}">
+                {{ $order->status == 'ready' ? 'border-green-500' : '' }}
+                {{ $order->status == 'completed' ? 'border-gray-600 opacity-50' : '' }}">
 
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -33,7 +34,8 @@
                     <span class="px-2 py-1 rounded text-xs font-bold uppercase
                         {{ $order->status == 'pending' ? 'bg-red-500 text-white' : '' }}
                         {{ $order->status == 'cooking' ? 'bg-yellow-500 text-black' : '' }}
-                        {{ $order->status == 'ready' ? 'bg-green-500 text-white' : '' }}">
+                        {{ $order->status == 'ready' ? 'bg-green-500 text-white' : '' }}
+                        {{ $order->status == 'completed' ? 'bg-gray-600 text-gray-300' : '' }}">
                         {{ $order->status }}
                     </span>
                 </div>
