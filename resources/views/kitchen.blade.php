@@ -10,7 +10,7 @@
     <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
         <div>
             <h1 class="text-3xl font-bold text-orange-500">👨‍🍳 Kitchen Tracker</h1>
-            <p class="text-gray-400 text-sm">Grouped by Table • Updates every 10s</p>
+            <p class="text-gray-400 text-sm">• Updates every 10s •</p>
         </div>
         <div class="space-x-4">
             <button onclick="window.location.reload()" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600">🔄 Refresh</button>
